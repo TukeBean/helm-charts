@@ -8,6 +8,10 @@ function cleanup_tempest_leftovers() {
   
   echo "Run cleanup"
 
+  export OS_USERNAME=tempestuser1
+  export OS_PROJECT_NAME=tempest1
+  export OS_TENANT_NAME=tempest1
+
   for service in $(openstack service list | grep -E 'tempest-service' | awk '{ print $2 }'); do openstack service delete ${service}; done
   for region in $(openstack region list | grep -E 'tempest-region' | awk '{ print $2 }'); do openstack region delete ${region}; done
   for project in $(openstack project list --domain tempest | grep -E 'tempest-Domains' | awk '{ print $2 }'); do openstack project delete ${project}; done
