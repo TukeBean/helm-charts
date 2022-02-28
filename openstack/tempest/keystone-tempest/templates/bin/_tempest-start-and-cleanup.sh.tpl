@@ -15,13 +15,6 @@ function cleanup_tempest_leftovers() {
   for project in $(openstack project list --domain tempest | grep -E 'tempest-Domains' | awk '{ print $2 }'); do openstack project delete ${project}; done
   for domain in $(openstack domain list | grep -E 'tempest-test_domain' | awk '{ print $2 }'); do openstack domain set --disable ${domain}; openstack domain delete ${domain}; done
 
-  export OS_USERNAME=tempestuser2
-  export OS_PROJECT_NAME=tempest2
-  export OS_TENANT_NAME=tempest2
-
-  for project in $(openstack project list --domain tempest | grep -E 'tempest-Domains' | awk '{ print $2 }'); do openstack project delete ${project}; done
-  for domain in $(openstack domain list | grep -E 'tempest-test_domain' | awk '{ print $2 }'); do openstack domain set --disable ${domain}; openstack domain delete ${domain}; done
-
   export OS_USERNAME=admin
   export OS_PROJECT_NAME=admin
   export OS_TENANT_NAME=admin
