@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openchamber
+  labels:
+    {{- include "openchamber.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "openchamber.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "openchamber.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        fsGroup: 1000
+      volumes:
+        - name: data
+        {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: openchamber-data
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
+      {{- if .Values.tailscale.enabled }}
+        - name: ts-state
+        {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: openchamber-tailscale-state
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
+        - name: ts-serve
+          configMap:
+            name: openchamber-tailscale-serve
+      {{- end }}
+      containers:
+        - name: openchamber
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PORT
+              value: {{ .Values.port | quote }}
+            {{- if or .Values.ui.existingSecret .Values.ui.password }}
+            - name: UI_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.ui.existingSecret | default "openchamber-ui" }}
+                  key: ui-password
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.port }}
+          volumeMounts:
+            - name: data
+              mountPath: /home/openchamber
+          {{- with .Values.resources.openchamber }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- if .Values.tailscale.enabled }}
+        - name: tailscale
+          image: "{{ .Values.tailscale.image.repository }}:{{ .Values.tailscale.image.tag }}"
+          env:
+            - name: TS_USERSPACE
+              value: "true"
+            - name: TS_STATE_DIR
+              value: /var/lib/tailscale
+            - name: TS_HOSTNAME
+              value: {{ .Values.tailscale.hostname | quote }}
+            - name: TS_SERVE_CONFIG
+              value: /config/serve.json
+            {{- with .Values.tailscale.extraArgs }}
+            - name: TS_EXTRA_ARGS
+              value: {{ . | quote }}
+            {{- end }}
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tailscale.existingSecret | default "openchamber-tailscale" }}
+                  key: TS_AUTHKEY
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: ts-state
+              mountPath: /var/lib/tailscale
+            - name: ts-serve
+              mountPath: /config
+          {{- with .Values.resources.tailscale }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- end }}

@@ -1,0 +1,41 @@
+image:
+  repository: ghcr.io/btriapitsyn/openchamber
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# OpenChamber listens on this port inside the pod.
+port: 3000
+
+# Optional password protecting the OpenChamber UI (exposed as UI_PASSWORD).
+# Prefer an existing secret over an inline value.
+ui:
+  existingSecret: ""      # secret holding key `ui-password`
+  password: ""            # used only when existingSecret is empty
+
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClass: ""
+
+tailscale:
+  enabled: true
+  image:
+    repository: ghcr.io/tailscale/tailscale
+    tag: v1.78.1
+  # Name the node gets on the tailnet: https://<hostname>.<tailnet>.ts.net
+  hostname: openchamber
+  # Tags/ephemeral/reusable should be set on the auth key itself in the Tailscale admin console.
+  # Either reference an existing secret (key `TS_AUTHKEY`) ...
+  existingSecret: ""
+  # ... or provide the key inline (creates a Secret; avoid committing real keys).
+  authKey: ""
+  # Serve the UI over HTTPS inside the tailnet (needs MagicDNS + HTTPS certs enabled).
+  # Use `funnel: true` ONLY if you want it exposed to the public internet.
+  serve:
+    https: true
+    funnel: false
+  extraArgs: ""
+
+resources:
+  openchamber: {}
+  tailscale: {}

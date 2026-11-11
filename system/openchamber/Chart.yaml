@@ -1,0 +1,6 @@
+apiVersion: v2
+name: openchamber
+description: OpenChamber web UI for OpenCode, reachable remotely over a Tailscale tailnet
+type: application
+version: 0.1.0
+appVersion: "latest"
